@@ -12,7 +12,8 @@ Faz a configuracao do bloco de memoria que deve ser gerenciado pela rotina.
 Argumentos:
 - r7: block_addr; endereco onde comeca o bloco de memoria
 - r6: block_end_addr; endereco onde acaba o bloco de memoria
-Returno:
+  
+Retorno:
 Nenhum.
 
 ### mem_init
@@ -21,7 +22,8 @@ Inicializa o bloco de memoria.
 
 Argumentos:
 Nenhum.
-Returno:
+
+Retorno:
 Nenhum.
 
 ### mem_alloc
@@ -30,7 +32,8 @@ Faz a alocacao dinamica da memoria.
 
 Argumentos:
 - r7: allocated_size; tamanho da memoria a ser alocada
-Returno:
+  
+Retorno:
 - r7: memory_pointer; endereco da memoria alocada, caso seu valor seja 0 (NULL) a rotina nao conseguiu alocar a memoria
 
 ### mem_free
@@ -39,7 +42,7 @@ Returno:
 Libera a memoria alocada.
 Argumentos:
 - r7: memory_pointer; endereco da memoria alocada
-Returno:
+Retorno:
 Nenhum.
 
 ### mem_defrager
@@ -49,5 +52,6 @@ Desfragmenta a memoria dinamica.
 
 Argumentos:
 Nenhum.
-Returno:
+
+Retorno:
 Nenhum.
