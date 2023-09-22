@@ -16,54 +16,54 @@ main:
 	call mem_move
 	call mem_init
 	loadn r7, #2
-	call mem_alloc_2
+	call mem_alloc
 	; esperado r7 ter o valor de 4 + 2 = 6
 	breakp
 	loadn r7, #2
-	call mem_alloc_2
+	call mem_alloc
 	; esperado r7 ter o valor de (4 + 2 + 2) + 2) = 10
 	breakp
 	loadn r7, #4
-	call mem_alloc_2
+	call mem_alloc
 	breakp
 	; esperado r7 ter o valor de 0, pois nao ha mais espaco na memoria dinamica
 	loadn r7, #1
-	call mem_alloc_2
+	call mem_alloc
 	breakp
 	; esperado r7 ter o valor de (4 + 2 + 2) + 2) + 2) = 14, pois ha um espaco exato na memoria para o tamanho 1
 	;----------- Teste de Alocacao e liberacao de memoria ----------
 	call mem_init ; libera o bloco inteiro de memoria
 	loadn r7, #2
-	call mem_alloc_2
+	call mem_alloc
 	; esperado r7 ter o valor de (4 + 2) = 6
 	breakp
 	call mem_free
 	loadn r7, #2
-	call mem_alloc_2
+	call mem_alloc
 	; esperado r7 ter o valor de 6 novamente, pois o bloco anterior foi limpo, e ele tem o tamanho exato
 	breakp
 	loadn r7, #2
-	call mem_alloc_2
+	call mem_alloc
 	; esperado r7 ter o valor de ((4 + 2 + 2) + 2) = 10
 	breakp
 	call mem_free
 	loadn r7, #2
-	call mem_alloc_2
+	call mem_alloc
 	; esperado r7 ter o valor de 10 novamente
 	breakp
 	loadn r7, #6
 	call mem_free ; libera 6
 	loadn r7, #2
-	call mem_alloc_2
+	call mem_alloc
 	; esperado r7 ter o valor de 6 agora
 	breakp
 	call mem_free
 	loadn r7, #1
-	call mem_alloc_2
+	call mem_alloc
 	breakp
 	; esperado r7 ter o valor de 14, pois ele nao vai conseguir dar split no bloco de tamanho 2 (4) do inicio
 	loadn r7, #1
-	call mem_alloc_2
+	call mem_alloc
 	breakp
 	; esperado r7 ter o valor de 0, pois ele nao consegue dar split no bloco inicial de tamanho 2 (4), e nao ha mais espaco livre
 	halt
@@ -100,7 +100,7 @@ mem_init:		; Rotina de inicializacao do bloco de memoria
 	pop r0
 	rts
 
-mem_alloc_2:		; Rotina de alocacao dinamica de memoria
+mem_alloc:		; Rotina de alocacao dinamica de memoria
 				; Argumentos:
 				; r7 = desired_size, tamanho do espaco a ser alocado
 				; Retorno:
@@ -117,7 +117,7 @@ mem_alloc_2:		; Rotina de alocacao dinamica de memoria
 	load r1, block_end_addr_pos
 	load r4, block_addr_pos ; next_block = block_addr
 	; do {
-mem_alloc_2_space_search_do_while:
+mem_alloc_space_search_do_while:
 	mov r2, r4 ; pos = next_block
 	loadi r3, r2 ; is_free = *(pos)
 	inc r2
@@ -129,56 +129,56 @@ mem_alloc_2_space_search_do_while:
 	; && (next_block - pos - 4 < desired_size) -> se ha como dar split no bloco
 	;)));
 	cmp r4, r1
-	jeq mem_alloc_2_space_search_do_while_end ; next_block == block_end_addr -> chegamos no ultimo item, sair da busca 
+	jeq mem_alloc_space_search_do_while_end ; next_block == block_end_addr -> chegamos no ultimo item, sair da busca 
 	cmp r3, r0
-	jne mem_alloc_2_space_search_do_while ; !is_free -> o bloco que estamos nao esta livre, continuar procurando
+	jne mem_alloc_space_search_do_while ; !is_free -> o bloco que estamos nao esta livre, continuar procurando
 	loadn r5, #2
 	sub r5, r4, r5 ; (next_block - 2)
 	sub r5, r5, r2 ; (next_block - 2) - pos
 	cmp r5, r7
-	jeq mem_alloc_2_space_search_do_while_end ; (next_block - pos - 2 == desired_size), achamos um bloco usavel, sair
+	jeq mem_alloc_space_search_do_while_end ; (next_block - pos - 2 == desired_size), achamos um bloco usavel, sair
 	dec r5
 	dec r5 ; (next_block - pos - 2) - 2
 	cmp r5, r7
-	jeg mem_alloc_2_space_search_do_while_end ; (next_block - pos - 4 >= desired_size) -> bloco grande suficiente para slip, sair
-	jmp mem_alloc_2_space_search_do_while ; o bloco nao eh util para alocacao exata, nem de split, continuar procurando
-mem_alloc_2_space_search_do_while_end:
+	jeg mem_alloc_space_search_do_while_end ; (next_block - pos - 4 >= desired_size) -> bloco grande suficiente para slip, sair
+	jmp mem_alloc_space_search_do_while ; o bloco nao eh util para alocacao exata, nem de split, continuar procurando
+mem_alloc_space_search_do_while_end:
 	; achamos um bloco ou chegamos no final
 	; conferir se chegamos no final == sem memoria
 	cmp r4, r1
-	jne mem_alloc_2_alloc_memory ; nao estamos no fim, portanto eh um bloco alocavel
+	jne mem_alloc_alloc_memory ; nao estamos no fim, portanto eh um bloco alocavel
 	cmp r3, r0
-	jne mem_alloc_2_space_not_found ; estamos no fim, e nem ele esta livre, nao temos memoria
+	jne mem_alloc_space_not_found ; estamos no fim, e nem ele esta livre, nao temos memoria
 	loadn r5, #2
 	sub r5, r4, r5 ; (next_block - 2)
 	sub r5, r5, r2 ; (next_block - 2) - pos
 	cmp r5, r7
-	jeq mem_alloc_2_alloc_memory ; (next_block - pos - 2 == desired_size) -> o bloco final tem tamanho exato, podemos alocar ainda
+	jeq mem_alloc_alloc_memory ; (next_block - pos - 2 == desired_size) -> o bloco final tem tamanho exato, podemos alocar ainda
 	inc r7
 	inc r7
 	cmp r5, r7 ; para podermos fazer a comparacao (next_block - pos - 4 >= desired_size) na forma (next_block - pos - 2 >= desired_size + 2)
 	dec r7
 	dec r7 ; voltando o valor de r7 ao original
-	jeg mem_alloc_2_alloc_memory ; (next_block - pos - 4 >= desired_size) -> bloco final grande suficiente para split, podemos alocar ainda
+	jeg mem_alloc_alloc_memory ; (next_block - pos - 4 >= desired_size) -> bloco final grande suficiente para split, podemos alocar ainda
 	; nao temos nem como ter alocacao exata, nem split, e chegamos no fim, retornar ponteiro NULL
-mem_alloc_2_space_not_found:
+mem_alloc_space_not_found:
 	mov r7, r0 ; ponteiro de saida eh NULL
-	jmp mem_alloc_2_return
-mem_alloc_2_alloc_memory:
+	jmp mem_alloc_return
+mem_alloc_alloc_memory:
 	; sabemos que o bloco atual eh proprio para alocacao
 	; primeiro vemos se eh tamanho exato
 	loadn r5, #2
 	sub r5, r4, r5 ; (next_block - 2)
 	sub r5, r5, r2 ; (next_block - 2) - pos
 	cmp r5, r7
-	jne mem_alloc_2_split_block ; (next_block - pos - 2) != desired_size -> o bloco atual eh para ser dado split
+	jne mem_alloc_split_block ; (next_block - pos - 2) != desired_size -> o bloco atual eh para ser dado split
 	; o bloco tem tamanho exato, apenas setar a flag de free e devolver o ponteiro
-mem_alloc_2_exact_block:
+mem_alloc_exact_block:
 	loadn r5, #2
 	storei r2, r5 ; *(pos) = 2 -> flag de free setada como nao livre
 	add r7, r2, r5 ; ponteiro de espaco alocado eh a pos + 2 de header
-	jmp mem_alloc_2_return	
-mem_alloc_2_split_block:
+	jmp mem_alloc_return	
+mem_alloc_split_block:
 	; o bloco eh para ser dado split
 	; atualizando o bloco atual ---
 	loadn r5, #2
@@ -194,7 +194,7 @@ mem_alloc_2_split_block:
 	inc r2 ; agora r2 = pos + 2
 	mov r7, r2 ; a saida tem o valor do ponteiro de pos + 2
 	; fim da alocacao por split
-mem_alloc_2_return:
+mem_alloc_return:
 	pop r5
 	pop r4
 	pop r3
