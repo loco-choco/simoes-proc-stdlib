@@ -39,6 +39,7 @@ Retorno:
 ### mem_free
 
 Libera a memoria alocada.
+
 Argumentos:
 - r7: memory_pointer; endereco da memoria alocada
 
