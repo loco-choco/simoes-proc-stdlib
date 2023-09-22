@@ -37,16 +37,15 @@ Retorno:
 - r7: memory_pointer; endereco da memoria alocada, caso seu valor seja 0 (NULL) a rotina nao conseguiu alocar a memoria
 
 ### mem_free
-**A SER IMPLEMENTADA**
 
 Libera a memoria alocada.
 Argumentos:
 - r7: memory_pointer; endereco da memoria alocada
+
 Retorno:
 Nenhum.
 
 ### mem_defrager
-**A SER IMPLEMENTADA**
 
 Desfragmenta a memoria dinamica.
 
