@@ -25,12 +25,12 @@ main:
 	breakp
 	loadn r7, #4
 	call mem_alloc
-	breakp
 	; esperado r7 ter o valor de 0, pois nao ha mais espaco na memoria dinamica
+	breakp
 	loadn r7, #1
 	call mem_alloc
-	breakp
 	; esperado r7 ter o valor de (4 + 2 + 2) + 2) + 2) = 14, pois ha um espaco exato na memoria para o tamanho 1
+	breakp
 	;----------- Teste de Alocacao e liberacao de memoria ----------
 	call mem_init ; libera o bloco inteiro de memoria
 	loadn r7, #2
@@ -66,8 +66,30 @@ main:
 	call mem_alloc
 	breakp
 	; esperado r7 ter o valor de 0, pois ele nao consegue dar split no bloco inicial de tamanho 2 (4), e nao ha mais espaco livre
+	;----------- Teste de desfragmentacao da Memoria ----------
+	call mem_init ; libera o bloco inteiro de memoria
+	loadn r7, #2
+	call mem_alloc
+	; esperado r7 ter o valor de (4 + 2) = 6
+	breakp
+	loadn r7, #2
+	call mem_alloc
+	; esperado r7 ter o valor de ((4 + 2 + 2) + 2) = 10
+	breakp
+	loadn r7, #6
+	call mem_free ; libera 6
+	loadn r7, #10
+	call mem_free ; libera 10
+	loadn r7, #4
+	call mem_alloc
+	; esperado r7 ter o valor de 0, pois nao cabe bloco de tamanho 4
+	breakp
+	call mem_defrag
+	loadn r7, #4
+	call mem_alloc
+	; esperado r7 ter o valor de 6, pois agora a memoria foi desfragmentada, e tem apenas 1 bloco
+	breakp
 	halt
-
 ; Fim do programa - Para o Processador
 	
 ;---- Fim do Programa Principal -----
@@ -213,6 +235,65 @@ mem_free:		; Rotina de liberacao de memoria alocada
 	loadn r1, #2
 	sub r1, r7, r1 ; Endereco da flag eh memory_pointer - 2
 	storei r1, r0 ; Seta a flag 'free' do bloco de memoria
+	pop r1
+	pop r0
+	rts
+
+mem_defrag:		; Rotina de desfragmentacao de blocos de memoria livre
+				; Argumentos: nenhum
+				; Retorno: nenhum
+	push r0 ; sempre 0
+	push r1 ; block_end_addr_pos
+	push r2 ; current_pos
+	push r3 ; start_defrag_block_pos
+	push r4 ; current_pos_free
+	push r5 ; start_defrag_block_pos_free
+
+	loadn r0, #0
+	load r1, block_end_addr_pos
+	load r2, block_addr_pos
+	mov r3, r2 ; start_defrag_block_pos = block_addr
+
+	; do {
+mem_defrag_merging_blocks_do_while:
+	loadi r5, r3 ; *(start_defrag_block_pos)
+	loadi r4, r2 ; *(current_pos)
+	
+	cmp r4, r5
+	jeq mem_defrag_found_new_defrag_block_end
+	; nao achamos fim/inicio de bloco, pular o if	
+mem_defrag_found_new_defrag_block:
+	cmp r5, r0
+	jne mem_defrag_merge_blocks_end
+	; o bloco que achamos o fim eh de free, juntar eles
+	mem_defrag_merge_blocks:
+		inc r3
+		storei r3, r2 ; *(start_block + 1) = current_pos -> junta os blocos free que sao seguidos
+		dec r3 ; volta r3 ao valor original
+	mem_defrag_merge_blocks_end:
+	mov r3, r2 ; start_block = current_pos -> novo inicio de bloco de defragmentacao
+mem_defrag_found_new_defrag_block_end:
+	inc r2
+	loadi r2, r2 ; current_pos = *(current_pos + 1) ; move para o proximo bloco
+mem_defrag_merging_blocks_end_do_while:
+	cmp r2, r1
+	jne mem_defrag_merging_blocks_do_while
+	; (current_pos != block_end_addr_pos) -> ha mais a ser possivelmente desfragmentado, ir para o proximo
+	; ultima checagem, caso o conjunto final de blocos seja de free
+	loadi r5, r3 ; *(start_defrag_block_pos)
+	cmp r5, r0
+	jne mem_defrag_merge_end_blocks
+	; o bloco que achamos o fim eh de free, juntar eles
+	mem_defrag_merge_end_blocks:
+		inc r3
+		storei r3, r2 ; *(start_block + 1) = current_pos -> junta os blocos free que sao seguidos
+		dec r3 ; volta r3 ao valor original
+	mem_defrag_merge_end_blocks_end:
+mem_defrag_return:
+	pop r5
+	pop r4
+	pop r3
+	pop r2
 	pop r1
 	pop r0
 	rts
