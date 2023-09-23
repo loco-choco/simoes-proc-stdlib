@@ -4,12 +4,13 @@ jmp main
 
 string_block : string "123"
 string2_block : string "ABC"
+string3_block : var #10
 
 ;---- Inicio do Programa Principal -----
 main:
 	; ------ Testando conversao em base 10 ------
 	loadn r7, #string_block
-	call string_lenght
+	call string_length
 	; r7 deve ter o tamanho da string de 3
 	breakp
 	loadn r7, #string_block ; pega o endereco da memoria com o char
@@ -22,7 +23,7 @@ main:
 	; r7 deve ter o valor da string de 123
 	breakp
 	loadn r7, #string2_block
-	call string_lenght
+	call string_length
 	; r7 deve ter o tamanho da string de 3
 	breakp
 	loadn r7, #string2_block ; pega o endereco da memoria com o char
@@ -53,6 +54,29 @@ main:
 	call convert_string_base_16_to_int
 	; r7 deve ter o valor de 2748
 	breakp
+
+	; ------ Testando conversao de inteiro para string ------
+	loadn r7, #string3_block
+	loadn r6, #9 ; 9 chars nao nulos
+	loadn r5, #10 ; valor
+	loadn r4, #10 ; base 10
+	call convert_int_to_string
+	; o string block deve ter agora os chars "10", para conferirmos se eh verdade vamos fazer a conversao inversa
+	; nao precisamos setar r7 novamentem, pois o codigo de erro esta em r6
+	call convert_string_base_10_to_int
+	; r7 deve ter o valor 10 agora
+	breakp
+
+	loadn r7, #string3_block
+	loadn r6, #9 ; 9 chars nao nulos
+	loadn r5, #10 ; valor
+	loadn r4, #2 ; base 10
+	call convert_int_to_string
+	; o string block deve ter agora os chars "1010", para conferirmos se eh verdade vamos fazer a conversao inversa
+	; nao precisamos setar r7 novamentem, pois o codigo de erro esta em r6
+	call convert_string_base_10_to_int
+	; r7 deve ter o valor 1010 agora
+	breakp
 	halt
 ; Fim do programa - Para o Processador
 	
@@ -60,7 +84,8 @@ main:
 	
 ;---- Inicio das Biblioteca -----
 
-string_lenght:			; Rotina de encontrar o tamanho da string
+;---- Rotinas Gerais de String ----
+string_length:			; Rotina de encontrar o tamanho da string
 				; Argumentos:
 				; r7 = ponteiro da string
 				; Retorno:
@@ -72,20 +97,74 @@ string_lenght:			; Rotina de encontrar o tamanho da string
 	loadn r1, #0
 	loadi r2, r7
 	cmp r2, r0
-	jeq string_lenght_loop_exit ; string de tamanho 0
-string_lenght_loop:
+	jeq string_length_loop_exit ; string de tamanho 0
+string_length_loop:
 	inc r1
 	inc r7
 	loadi r2, r7
 	cmp r2, r0
-	jne string_lenght_loop ; while(*(r7) != NULL)
-string_lenght_loop_exit:
+	jne string_length_loop ; while(*(r7) != NULL)
+string_length_loop_exit:
 	mov r7, r1 ; r7 toma o tamanho da string
 	pop r2
 	pop r1
 	pop r0
 	rts
 
+string_copy:			; Rotina de copiar a string de um endereco para outro
+				; Argumentos:
+				; r7 = endereco da string original
+				; r6 = endereco da copia
+				; Retorno: nenhum
+	push r0 ; 0
+	push r1 ; char_original
+	push r6 ; char * s_copy
+	push r7 ; char * s
+string_copy_loop: ; do {
+	loadi r1, r7 ; char_original = *s;	
+	storei r6, r1 ; *(s_copy) = char_original
+	inc r6 ; vai para a prox pos no s_copy
+	inc r7 ; vai para a prox pos no s
+	cmp r1, r0
+	jne string_copy_loop ; } while( char_original != '\0')
+string_copy_loop_end:
+	pop r7
+	pop r6
+	pop r1
+	pop r0
+	rts
+	
+string_reverse:			; Rotina de inverter a string, editando ela no endereco
+				; Argumentos:
+				; r7 = endereco da string
+				; Retorno: nenhum
+	push r0 ; pos
+	push r1 ; pos_reverse
+	push r2 ; c_pos
+	push r7 ; size e depois c_pos_reverse
+	mov r0, r7 ; pos = endereco string
+	call string_length
+	add r1, r0, r7 ; pos + string_length
+	dec r1 ; pos_reverse = pos + string_length - 1
+string_reverse_loop_check:
+	cmp r0, r1
+	jeg string_reverse_loop_end ; while (pos < pos_reverse) {
+string_reverse_loop:
+	loadi r2, r0 ; c_pos = s[pos]
+	loadi r7, r1 ; c_pos_reverse = s[pos_reverse]
+	storei r1, r2 ; s[pos_reverse] = c_pos
+	storei r0, r7 ; s[pos] = c_pos_reverse
+	inc r0 ; pos++
+	dec r1 ; pos --
+	jmp string_reverse_loop_check
+string_reverse_loop_end: ; }
+	pop r7
+	pop r2
+	pop r1
+	pop r0
+	rts
+
+;---- Rotinas de Conversao String para INT ----
 convert_char_base_10_to_int:	; Rotina de converter char para inteiro, base 10
 				; Argumentos:
 				; r7 = caractere para ser convertido
@@ -124,7 +203,7 @@ convert_string_base_10_to_int:	; Rotina de converter string para inteiro.
 	loadn r3, #1  ; valor da primeira casa decimal
 	loadn r5, #10 ; cada casa decimal tem valor de 10
 	mov r4, r7 ; r4 aponta para o inicio da string
-	call string_lenght ; temos agora o tamanho da string
+	call string_length ; temos agora o tamanho da string
 	mov r2, r7 ; que eh o numero de casas do numero
 	add r4, r4, r7 ; r4 (inicio + tamanho) aponta agora para o char de finalizacao da string ('\0)
 convert_string_base_10_to_int_loop:
@@ -159,8 +238,6 @@ convert_string_base_10_to_int_return:
 	pop r0
 	rts
 
-
-;----- TODO --------
 convert_char_base_16_to_int:	; Rotina de converter char para inteiro, base 16
 				; Argumentos:
 				; r7 = caractere para ser convertido
@@ -229,7 +306,7 @@ convert_string_base_16_to_int:	; Rotina de converter string para inteiro.
 	loadn r3, #1  ; valor da primeira casa decimal
 	loadn r5, #16 ; cada casa decimal tem valor de 16
 	mov r4, r7 ; r4 aponta para o inicio da string
-	call string_lenght ; temos agora o tamanho da string
+	call string_length ; temos agora o tamanho da string
 	mov r2, r7 ; que eh o numero de casas do numero
 	add r4, r4, r7 ; r4 (inicio + tamanho) aponta agora para o char de finalizacao da string ('\0)
 convert_string_base_16_to_int_loop:
@@ -263,3 +340,57 @@ convert_string_base_16_to_int_return:
 	pop r1
 	pop r0
 	rts
+
+;---- Rotina de Conversao INT para String ----
+int_symbols: string "0123456789abcdef"
+convert_int_to_string:	; Rotina de converter inteiro para representacao em base qualquer
+; Inspirado no codigo em https://learn.saylor.org/mod/book/view.php?id=33001&chapterid=12849, mas sem ser recursivo
+				; Argumentos:
+				; r7 = char *s, endereco onde a string sera escrita
+				; r6 = max_size, tamanho maximo que a string pode ter, nao incluindo o '\0'
+				; r5 = valor, valor para ser convertido
+				; r4 = base, base para se converter, de 2 - 16 apenas
+				; Retorno: 
+				; r6 = codigo de erro: 0 -> convertido, 1 -> tamanho estourado
+	push r0 ; 0, e constantes
+	push r1 ; char* s
+	push r2 ; tamanho atual da string
+	push r3 ; symbol_to_use
+	push r5 ; valor a ser convertido
+	loadn r0, #0
+	mov r1, r7
+	loadn r2, #0
+	cmp r2, r6
+	jeq convert_int_to_string_loop_end ; tamanho maximo eh zero, portanto nao tem o que converter
+convert_int_to_string_loop:
+	mod r3, r5, r4 ; valor % base -> algarismo
+	loadn r0, #int_symbols
+	add r3, r0, r3 ; *(int_symbols[valor % base])
+	loadi r3, r3 ; int_symbols[valor % base]
+	storei r1, r3 ; *s = int_symbols[valor % base]
+	
+	div r5, r5, r4 ; valor = valor / base
+	inc r1 ; s++, vai para a proximo posicao na string
+	inc r2 ; tamanho_atual++
+	loadn r0, #0
+	cmp r5, r0
+	jeq convert_int_to_string_loop_end ; valor == 0, portanto terminamos a conversao
+	cmp r2, r6
+	jle convert_int_to_string_loop ; ainda nao atingimos o tamanho maximo, voltar no loop
+convert_int_to_string_loop_end:
+	loadn r0, #0
+	storei r1, r0 ; coloca '\0' no fim da string
+	loadn r6, #0 ; conseguimos converter
+	call string_reverse ; inverte a string, colocando os algarismos na ordem certa
+	jmp convert_int_to_string_return
+convert_int_to_string_not_enough_space:
+	loadn r6, #1 ; espaco faltando para converter
+convert_int_to_string_return:
+	pop r5
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	rts
+
+
