@@ -70,8 +70,8 @@ scan_string:		; Rotina de esperar uma string ser enviada (ultimo char ser '\n').
 	push r0 ; guarda '\n', que eh condicao de parada, depois '\0' para inserir no fim da string
 	push r1 ; char * s, endereco do char da string
 	push r2 ; int size, tamanho da string, para nao ultrapassar o max_size
-	mov r1, r7
 	push r7 ; pois scan_char retorna no r7, entao copiamos seu valor para r1, e protegemos r7 do caller
+	mov r1, r7
 	loadn r0, #13 ; '\n'
 	loadn r2, #0
 scan_string_loop:
