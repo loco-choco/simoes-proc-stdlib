@@ -10,7 +10,7 @@ Todas elas estao documentadas no proprio arquivo fonte, com um exemplo de uso.
 Determina o tamanho da string.
 
 Argumentos:
--r7: string_pointer; endereco da string
+- r7: string_pointer; endereco da string
 
 Retorno:
 - r7: lenght; tamanho da string
@@ -22,7 +22,7 @@ Retorno:
 Converte um char para um inteiro em base 10
 
 Argumentos:
--r7: char; caracter a ser convertido
+- r7: char; caracter a ser convertido
 
 Retorno:
 - r7: valor; valor do numero convertido
@@ -35,7 +35,7 @@ Retorno:
 Converte uma string para um inteiro em base 10
 
 Argumentos:
--r7: string_pointer; endereco da string
+- r7: string_pointer; endereco da string
 
 Retorno:
 - r7: valor; valor do numero convertido
@@ -49,7 +49,7 @@ Retorno:
 Converte um char para um inteiro em base 10
 
 Argumentos:
--r7: char; caracter a ser convertido
+- r7: char; caracter a ser convertido
 
 Retorno:
 - r7: valor; valor do numero convertido
@@ -62,7 +62,7 @@ Retorno:
 Converte uma string para um inteiro em base 10
 
 Argumentos:
--r7: string_pointer; endereco da string
+- r7: string_pointer; endereco da string
 
 Retorno:
 - r7: valor; valor do numero convertido
