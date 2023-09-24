@@ -15,6 +15,27 @@ Argumentos:
 Retorno:
 - r7: lenght; tamanho da string
 
+### string_copy
+
+Copia o conteudo de uma string para outro endereco.
+
+Argumentos:
+- r7: string_pointer; endereco da string original
+- r6: string_copy_pointer; endereco da copia
+
+Retorno:
+Nenhum.
+
+### string_reverse
+
+Inverte os caracteres de uma string.
+
+Argumentos:
+- r7: string_pointer; endereco da string
+
+Retorno:
+Nenhum.
+
 ## Rotinas String/Char para Inteiro
 
 ### convert_char_base_10_to_int
@@ -73,28 +94,17 @@ Retorno:
 
 ## Rotinas Inteiro para String
 
-### convert_int_to_string_base_16
-
-** A SER IMPLEMENTADO **
+### convert_int_to_string
 
 Converte uma inteiro para uma string em representacao base 16
 
 Argumentos:
-- r7: valor; valor para ser convertido
-- r6: string_pointer; endereco da string a ser escrito
+- r7: string_pointer; endereco da string a ser escrito
+- r6: max_size; tamanho maximo que a string pode ter, nao incluindo o '\0'
+- r5: valor; valor para ser convertido
+- r4: base; base que deve ser usada na conversao, de 2 - 16 apenas
 
 Retorno:
-Nenhum.
-
-### convert_int_to_string_base_10
-
-** A SER IMPLEMENTADO **
-
-Converte uma inteiro para uma string em representacao base 10
-
-Argumentos:
-- r7: valor; valor para ser convertido
-- r6: string_pointer; endereco da string a ser escrito
-
-Retorno:
-Nenhum.
+- r6: codigo de erro:
+    - 0 -> convertido
+    - 1 -> tamanho estourado
