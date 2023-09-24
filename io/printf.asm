@@ -59,6 +59,11 @@ main:
 	loadn r6, #0 ; branco
 	call print_string
 	breakp
+	; printar string com overflow, significa que ira voltar na origem e continuar ate toda a mensagem estar escrita
+	loadn r7, #string_too_big_for_display
+	loadn r6, #2816 ; amarelo 
+	call print_string_overflow
+	breakp
 	halt
 ; Fim do programa - Para o Processador
 	
@@ -207,6 +212,40 @@ print_string_loop:
 	jne print_string_loop ; r7 != '\0', continuar printando
 	; se chegou aqui terminamos de printar sem chegar no fim, e r7 esta com 0 ('\0') 
 print_string_return:
+	pop r1
+	pop r0
+	rts
+
+print_string_overflow:		; Rotina de printar uma string a partir da posicao atual, com overflow. Caso o fim seja atingido, ele parte da origem do canvas
+			; Argumentos:
+			; r7 = char* s, endereco da string
+			; r6 = color, cor da string
+			; Retorno: nenhum
+	push r0; 0
+	push r1 ; char * s
+	push r7 ; char atual
+	loadn r0, #0
+	mov r1, r7
+	loadi r7, r1 ; r7 tem o caracter
+	cmp r7, r0 ; r7 == '\0'
+	jeq print_string_overflow_return ; string vazia, nao printar nem mover cursor
+print_string_overflow_loop:
+	call print_char
+	cmp r7, r0 ; r7 != 0, portanto fim de buffer, voltar cursor ao inicio
+	jeq print_string_overflow_loop_reset_cursor_end
+print_string_overflow_loop_reset_cursor:
+	push r7
+	mov r7, r0
+	call canvas_move_cursor
+	pop r7 ; push e pop mais facil do que de usar um novo registrador
+print_string_overflow_loop_reset_cursor_end:
+	inc r1
+	loadi r7, r1 ; proximo char
+	cmp r7, r0
+	jne print_string_overflow_loop ; r7 != '\0', continuar printando
+	; se chegou aqui terminamos de printar sem chegar no fim, e r7 esta com 0 ('\0') 
+print_string_overflow_return:
+	pop r7
 	pop r1
 	pop r0
 	rts
