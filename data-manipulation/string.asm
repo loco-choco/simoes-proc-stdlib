@@ -6,6 +6,7 @@ string_block : string "123"
 string2_block : string "ABC"
 string3_block : var #10
 string4_block : string "uma BAnana"
+token_buffer : var #5
 
 ;---- Inicio do Programa Principal -----
 main:
@@ -112,6 +113,20 @@ main:
 	; eh para r6 ter o tamanho do bloco, ou seja o valor 2
 	breakp
 	; string_token:
+	loadn r7, #string4_block
+	loadn r6, #string2_block
+	loadn r5, #token_buffer
+	loadn r4, #4
+	call string_token
+	; vai encontrar o primeiro token em string4_block usando os delimitadores em string2_block e gravar em token_buffer
+	; por esse token ter 4 de tamanho r6 estara marcado com 1, por estar usando todo o tamanho do buffer
+	; e r7 estara na pos 24, por ser apos o fim do token
+	breakp
+	; para mostrar que o token foi corretamente gravado, o tamanho da string deve ser 4
+	loadn r7, #token_buffer
+	call string_length
+	; se gravou certo, r7 = 4
+	breakp
 	halt
 ; Fim do programa - Para o Processador
 	
@@ -325,6 +340,82 @@ string_span_return:
 	pop r1
 	pop r0
 	rts
+
+string_token:		; Rotina de extrair tokens de uma string a partir de caracteres de delimitacao
+				; Argumentos:
+				; r7 = ponteiro da string a ser scaneada
+				; r6 = ponteiro da string com caracteres de delimitacao
+				; r5 = endereco onde o token deve ser escrito (tem que ser grande o suficiente para o token)
+				; r4 = tamanho do buffer em r5, nao incluindo o char de finalizacao '\0', ira parar de escrever no token e avisar no retorno, contudo ira retornar a correta posicao para a busca do token seguinte. TEM QUE SER MAIOR QUE 1.
+				; Retorno:
+				; r7 = aponta para a posicao final do token na string scaneada
+				; r6 = codigo de erro: 0 -> consegiu escrever, 1 -> encheu completamente o buffer
+	push r0 ; 0
+	push r1 ; char da string scaneada
+	push r2 ; char da string de delimitacao
+	push r3 ; ponteiro da string de delimitacao
+	push r4 ; tamanho disponivel no buffer de token
+	push r5 ; ponteiro do token_buffer
+	loadn r0, #0
+	storei r5, r0 ; faz com que o primeiro char no buffer the token seja nulo, sera util para verificar se foi encontrado um token na string
+string_token_loop_check: ; while(*(string_scanned) != NULL) {
+	loadi r1, r7 ; r1 toma o char na pos de r7
+	cmp r1, r0
+	jeq string_token_loop_end
+string_token_loop:
+	mov r3, r6 ; vai para o inicio da string de busca
+	string_token_find_loop_check: ; while(*(string_delimiter) != NULL && *(string_delimiter) != *(string_scanned)){
+		loadi r2, r3 ; r2 toma o char na pos de r3
+		cmp r2, r0
+		jeq string_token_find_loop_end
+		cmp r2, r1
+		jeq string_token_find_loop_end
+	string_token_find_loop:
+		inc r3
+		jmp string_token_find_loop_check
+	string_token_find_loop_end:; }
+	cmp r2, r0
+	jne string_token_outside_token ; if(*(string_delimiter) == NULL), estamos no token
+string_token_in_token:
+	; estamos no token, entao copiar para o token
+	cmp r4, r0
+	jeq string_token_in_token_copy_end ; se o tamanho for zero, nao podemos mais inserir
+	string_token_in_token_copy:
+		storei r5, r1 ; copiar o char para o token_buffer
+		dec r4 ; reduzir por um o tamanho maximo permitido
+		cmp r4, r0
+		jeq string_token_in_token_end ; apenas ir para o proximo caso nao tenhamos estourado o tamanho, necessario pois usamos o conteudo do token_buffer para determinar se estavamos em um token
+		inc r5 ; ir para a proxima pos do token_buffer
+	string_token_in_token_copy_end:
+	jmp string_token_in_token_end
+string_token_outside_token: ; else if(*(token_buffer) != NULL), acabamos de sair do bloco do token, sair do loop, pois o char de delimitacao nao eh nulo, entao ver se foi escrito no token_buffer, se sim entao estavamos no token antes, ou seja, condicao de parada
+	loadi r2, r5 ; pega o char no token_buffer, usando r2 pois ele teve o seu uso no loop finalizado 
+	cmp r2, r0
+	jne string_token_loop_end ; nao eh NULL? entao acabamos de sair do token
+string_token_in_token_end:
+	inc r7 ; vai para o proximo caracter
+	jmp string_token_loop_check
+string_token_loop_end: ; }
+	; r7 esta apontando para o local correto
+	; apenas precisamos colocar o codigo de erro em r6
+	; e adicionar o char de termino '\0' no token_buffer
+	inc r5
+	storei r5, r0 ; coloca '\0' no fim
+	cmp r4, r0
+	mov r6, r0 ; antes de checar assumir que nao usamos todo o buffer
+	jne string_token_used_all_token_buffer_end
+string_token_used_all_token_buffer:
+	loadn r6, #1
+string_token_used_all_token_buffer_end:
+string_token_return:
+	pop r5
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	rts
+
 
 ;---- Rotinas de Conversao String para INT ----
 convert_char_base_10_to_int:	; Rotina de converter char para inteiro, base 10
