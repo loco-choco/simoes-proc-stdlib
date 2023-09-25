@@ -5,6 +5,7 @@ jmp main
 string_block : string "123"
 string2_block : string "ABC"
 string3_block : var #10
+string4_block : string "uma BAnana"
 
 ;---- Inicio do Programa Principal -----
 main:
@@ -77,6 +78,40 @@ main:
 	call convert_string_base_10_to_int
 	; r7 deve ter o valor 1010 agora
 	breakp
+
+	; ------ Testando rotinas gerais de string ------
+
+	; string_copy:
+	loadn r7, #string3_block
+	loadn r6, #string_block
+	call string_copy
+	; string3_block deve ter o conteudo de string_block
+	; para conferirmos vamos converter para um numero que estara em r7
+	call convert_string_base_10_to_int
+	; r7 deve ter o valor de 123
+	breakp
+	; string_concatenate:
+	loadn r7, #string3_block
+	loadn r6, #string_block
+	call string_concatenate
+	; string3_block agora deve ter o conteudo de "123123", esse numero eh grande demais para visualizar no registrador, entao iremos nele armazenar o tamanho da string que sera de 6 no r7
+	call string_length
+	breakp
+	; string_pointer_break:
+	loadn r7, #string4_block
+	loadn r6, #string2_block
+	call string_pointer_break
+	; vai procurar pelo primeiro caracter de string3_block em string4_block
+	; eh para r7 ter o endereco de A, ou seja o valor 24
+	breakp
+	; string_span:
+	loadn r7, #string4_block
+	loadn r6, #string2_block
+	call string_span
+	; vai procurar pelo tamanho do primeiro bloco de caracteres de string3_block em string4_block
+	; eh para r6 ter o tamanho do bloco, ou seja o valor 2
+	breakp
+	; string_token:
 	halt
 ; Fim do programa - Para o Processador
 	
@@ -113,18 +148,19 @@ string_length_loop_exit:
 
 string_copy:			; Rotina de copiar a string de um endereco para outro
 				; Argumentos:
-				; r7 = endereco da string original
-				; r6 = endereco da copia
+				; r7 = endereco do destino string
+				; r6 = endereco da string original
 				; Retorno: nenhum
 	push r0 ; 0
 	push r1 ; char_original
-	push r6 ; char * s_copy
-	push r7 ; char * s
+	push r6 ; char * s_original
+	push r7 ; char * s_copia
+	loadn r0, #0
 string_copy_loop: ; do {
-	loadi r1, r7 ; char_original = *s;	
-	storei r6, r1 ; *(s_copy) = char_original
-	inc r6 ; vai para a prox pos no s_copy
-	inc r7 ; vai para a prox pos no s
+	loadi r1, r6 ; char_original = *s_original;	
+	storei r7, r1 ; *(s_copia) = char_original
+	inc r6 ; vai para a prox pos no s_original
+	inc r7 ; vai para a prox pos no s_copia
 	cmp r1, r0
 	jne string_copy_loop ; } while( char_original != '\0')
 string_copy_loop_end:
@@ -134,6 +170,40 @@ string_copy_loop_end:
 	pop r0
 	rts
 	
+string_concatenate:		; Rotina de concaternar uma copia de uma string para uma outra de destino
+				; Argumentos:
+				; r7 = endereco da string destino
+				; r6 = endereco da string fonte
+				; Retorno: nenhum
+	push r0 ; 0
+	push r1 ; char_fonte
+	push r6 ; char * s_fonte
+	push r7 ; char * s_destino
+	; temos que primeiro achar o fim da string do destino para podermos comecar a fazer append
+	loadn r0, #0
+string_concatenate_find_dest_end_loop_check: ; while (*s_destinho != '\0') {
+	loadi r1, r7
+	cmp r1, r0
+	jeq string_concatenate_find_dest_end_loop_end
+string_concatenate_find_dest_end_loop:
+	inc r7 ; s_destino++
+	jmp string_concatenate_find_dest_end_loop_check
+string_concatenate_find_dest_end_loop_end: ; }
+
+string_concatenate_loop: ; do {
+	loadi r1, r6 ; char_fonte = *s_fonte;	
+	storei r7, r1 ; *(s_destino) = char_fonte
+	inc r6 ; vai para a prox pos no s_fonte
+	inc r7 ; vai para a prox pos no s_destino
+	cmp r1, r0
+	jne string_copy_loop ; } while( char_fonte != '\0')
+string_concatenate_loop_end:
+	pop r7
+	pop r6
+	pop r1
+	pop r0
+	rts
+
 string_reverse:			; Rotina de inverter a string, editando ela no endereco
 				; Argumentos:
 				; r7 = endereco da string
@@ -159,6 +229,98 @@ string_reverse_loop:
 	jmp string_reverse_loop_check
 string_reverse_loop_end: ; }
 	pop r7
+	pop r2
+	pop r1
+	pop r0
+	rts
+
+string_pointer_break:		; Rotina de encontrar a posicao da primeira ocorrencia de uma caracter da string de busca na string scaneada
+				; Argumentos:
+				; r7 = ponteiro da string a ser scaneada
+				; r6 = ponteiro da string com caracteres de busca
+				; Retorno:
+				; r7 = endereco do caracter encontrado
+	push r0 ; 0
+	push r1 ; char da string scaneada
+	push r2 ; char da string de busca
+	push r3 ; ponteiro da string de busca
+	loadn r0, #0
+string_pointer_break_loop_check: ; while(*(string_scanned) != NULL) {
+	loadi r1, r7 ; r1 toma o char na pos de r7
+	cmp r1, r0
+	jeq string_pointer_break_loop_end
+string_pointer_break_loop:
+	mov r3, r6 ; vai para o inicio da string de busca
+	string_pointer_break_find_loop_check: ; while(*(string_search) != NULL){
+		loadi r2, r3 ; r2 toma o char na pos de r3
+		cmp r2, r0
+		jeq string_pointer_break_find_loop_end
+	string_pointer_break_find_loop:
+		cmp r1, r2
+		jeq string_pointer_break_return ; se achamos o caracter da string scaneada na string de busca, retornar agora pois r7 tem o valor correto
+		inc r3
+		jmp string_pointer_break_find_loop_check
+	string_pointer_break_find_loop_end:; } 
+	inc r7 ; vai para o proximo caracter
+	jmp string_pointer_break_loop_check
+string_pointer_break_loop_end: ; }
+	; se nao retornamos antes, entao nao encontramos nenhum char da string de busca na escaneada, retornando NULL
+	mov r7, r0
+string_pointer_break_return:
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	rts
+
+string_span:		; Rotina de encontrar o tamanho da porcao de caracteres da string de busca contida na string scaneada
+				; Argumentos:
+				; r7 = ponteiro da string a ser scaneada
+				; r6 = ponteiro da string com caracteres de busca
+				; Retorno:
+				; r6 = tamanho do bloco de caracteres
+	push r0 ; 0
+	push r1 ; char da string scaneada
+	push r2 ; char da string de busca
+	push r3 ; ponteiro da string de busca
+	push r4 ; tamanho do bloco
+	push r7 ; para protecao do r7
+	
+	loadn r0, #0
+	loadn r4, #0 ; tamanho inicia 0
+string_span_loop_check: ; while(*(string_scanned) != NULL) {
+	loadi r1, r7 ; r1 toma o char na pos de r7
+	cmp r1, r0
+	jeq string_span_loop_end
+string_span_loop:
+	mov r3, r6 ; vai para o inicio da string de busca
+	string_span_find_loop_check: ; while(*(string_search) != NULL && *(string_search) != *(string_scanned)){
+		loadi r2, r3 ; r2 toma o char na pos de r3
+		cmp r2, r0
+		jeq string_span_find_loop_end
+		cmp r2, r1
+		jeq string_span_find_loop_end
+	string_span_find_loop:
+		inc r3
+		jmp string_span_find_loop_check
+	string_span_find_loop_end:; }
+	cmp r2, r0
+	jeq string_span_not_in_span ; if(*(string_search) != NULL), estamos no spam 
+string_span_in_span:
+	inc r4 ; esse caracter eh do bloco, entao aumentar o valor em 1
+	jmp string_span_in_span_end
+string_span_not_in_span: ; else if(tamanho_bloco > 0), acabamos de sair do bloco, sair do loop, pois o char de busca eh nulo, aka nao encontramos
+	cmp r4, r0
+	jgr string_span_loop_end
+string_span_in_span_end:
+	inc r7 ; vai para o proximo caracter
+	jmp string_span_loop_check
+string_span_loop_end: ; }
+	mov r6, r4 ; r6 recebe o valor do tamanho do bloco
+string_span_return:
+	pop r7
+	pop r4
+	pop r3
 	pop r2
 	pop r1
 	pop r0
