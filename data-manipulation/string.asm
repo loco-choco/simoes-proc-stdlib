@@ -82,6 +82,17 @@ main:
 
 	; ------ Testando rotinas gerais de string ------
 
+	; string_compare
+	loadn r7, #string_block
+	loadn r6, #string_block
+	call string_compare
+	; tem o mesmo conteudo, r6 eh para estar com 0
+	breakp
+	loadn r7, #string2_block
+	loadn r6, #string_block
+	call string_compare
+	; agora a string r6 vai depois que a string em r7, r6 eh um valor positivo
+	breakp
 	; string_copy:
 	loadn r7, #string3_block
 	loadn r6, #string_block
@@ -161,6 +172,37 @@ string_length_loop_exit:
 	pop r0
 	rts
 
+string_compare:			; Rotina de comparar duas strings
+				; Argumentos:
+				; r7 = endereco da string a
+				; r6 = endereco da string b
+				; Retorno: 
+				; r6 = <0 se o char que nao bate de a for menor que o em b, 0 se forem iguais, >0 caso o contrario
+	push r0 ; 0
+	push r1 ; char_a
+	push r2 ; char_b
+	push r7 ; char * s_b
+	loadn r0, #0
+string_compare_loop: ; do {
+	loadi r1, r7 ; char_a = *s_a;	
+	loadi r2, r6 ; char_b = *s_b;	
+	inc r6 ; vai para a prox pos no s_original
+	inc r7 ; vai para a prox pos no s_copia
+	cmp r1, r0
+	jeq string_compare_loop_end
+	cmp r2, r0
+	jeq string_compare_loop_end
+	cmp r1, r2
+	jeq string_compare_loop
+string_compare_loop_end: ; } while( char_a != '\0' && char_b != '\0' && char_a != char_b)
+	; agora o resultado da comparacao eh dado ao subtrair char_b de char_a
+	sub r6, r1, r2
+	pop r7
+	pop r2
+	pop r1
+	pop r0
+	rts
+	
 string_copy:			; Rotina de copiar a string de um endereco para outro
 				; Argumentos:
 				; r7 = endereco do destino string
