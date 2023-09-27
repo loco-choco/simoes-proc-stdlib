@@ -155,6 +155,54 @@ canvas_move_cursor_return:
 	pop r0
 	rts
 
+canvas_clear:		; Rotina de limpar o canvas atual
+			; Argumentos: nenhum
+			; Retorno: nenhum
+	push r0 ; 0
+	push r1 ; pos_on_screen
+	push r2 ; pos_x_on_canvas
+	push r3 ; pos_y_on_canvas
+	push r4 ; canvas_start_pos_x
+	push r5 ; canvas_start_pos_y
+	push r6 ; screen_width
+	
+	loadn r0, #0
+	load r4, canvas_start_pos_x
+	load r5, canvas_start_pos_y
+	load r6, screen_width
+	
+	load r3, canvas_resolution_y ; carrega o tamanho de y no canvas
+canvas_clear_loop_y_check: ; while (pos_y_on_canvas != 0) {
+	cmp r3, r0
+	jeq canvas_clear_loop_y_end
+canvas_clear_loop_y:
+	dec r3
+	load r2, canvas_resolution_x ; carrega o tamanho de x no canvas
+	canvas_clear_loop_x_check: ; while (pos_x_on_canvas != 0) {
+		cmp r2, r0
+		jeq canvas_clear_loop_x_end
+	canvas_clear_loop_x:
+		dec r2
+
+		add r1, r3, r5
+		mul r1, r1, r6
+		add r1, r1, r4
+		add r1, r1, r2
+		; r1 = x + x0 + (y + y0) * W
+		outchar r0, r1 ; desenha char vazio na pos de r1
+		jmp canvas_clear_loop_x_check
+	canvas_clear_loop_x_end: ; }
+	jmp canvas_clear_loop_y_check
+canvas_clear_loop_y_end: ; }
+	pop r6
+	pop r5
+	pop r4
+	pop r3
+	pop r2
+	pop r1
+	pop r0
+	rts
+
 draw_char:		; Rotina de desenhar o caracter na posicao atual do cursor no canvas
 			; Argumentos:
 			; r7 = char, caracter para desenhar
