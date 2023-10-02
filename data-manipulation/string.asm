@@ -205,19 +205,19 @@ string_compare_loop_end: ; } while( char_a != '\0' && char_b != '\0' && char_a !
 
 string_starts_with:		; Rotina de conferir se uma string comeca com outra
 				; Argumentos:
-				; r6 = endereco da string base
 				; r7 = endereco da string que queremos conferir se faz parte do inicio da string base
+				; r6 = endereco da string base
 				; Retorno: 
 				; r6 = 0, se a string rm r6 fazer parte do inicio da de r7, outro valor caso nao
 	push r0 ; 0
-	push r1 ; char_base
-	push r2 ; char_comp
+	push r1 ; char_comp
+	push r2 ; char_base
 	; r6, s_comp
 	push r7 ; char * s_base
 	loadn r0, #0
 string_starts_with_loop: ; do {
-	loadi r1, r7 ; char_base = *s_base;	
-	loadi r2, r6 ; char_comp = *s_comp;	
+	loadi r1, r7 ; char_comp = *s_comp;	
+	loadi r2, r6 ; char_base = *s_base;	
 	inc r6 ; vai para a prox pos no s_comp
 	inc r7 ; vai para a prox pos no s_base
 	cmp r1, r0
@@ -228,7 +228,7 @@ string_starts_with_loop: ; do {
 	jeq string_starts_with_loop
 string_starts_with_loop_end: ; } while( char_base != '\0' && char_comp != '\0' && char_base != char_comp)
 	; se chegamos aqui, e char_comp == '\0', significa que todo o inicio da s_base contem s_comp, portanto r6 = 0, se nao, r6 = char_comp
-	mov r6, r2
+	mov r6, r1
 	pop r7
 	pop r2
 	pop r1
